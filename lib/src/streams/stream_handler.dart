@@ -544,11 +544,12 @@ class StreamHandler extends Object with TerminatableMixin, ClosableMixin {
 
             _handleHeadersFrame(newStream, frame);
             _newStreamsC.add(newStream);
-          } else if (frame.hasEndStreamFlag) {
-            // This could be the other side trying to close the stream and
-            // sending trailer headers just after this side closed the stream
-            // and cleaned up local state. Dont do any thing in this case.
-          } else {
+          } else if (frame.header.streamId >= nextStreamId) {
+            // A client might still recv messages from closed streams if it was
+            // sent on the server at the same time the stream was closed on the
+            // client and removed from local state, in that case just ignore the
+            // message
+            //
             // A server cannot open new streams to the client. The only way
             // for a server to start a new stream is via a PUSH_PROMISE_FRAME.
             throw ProtocolException(
